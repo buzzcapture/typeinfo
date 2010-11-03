@@ -1,5 +1,5 @@
 """ 
-    contains utilities and definitions of the BC attribute type information container. Use in ure class as follows:
+    contains utilities and definitions of the BC attribute type information container. Use in your class as follows:
     class SomeClass(object):
         __typeinfo__ = TypeInfo(
                     att1=int,
@@ -10,6 +10,7 @@
            self.att2="A"
 """
 from inspect import isclass
+from copy import deepcopy
 
 class TypeException(Exception):
     pass
@@ -21,11 +22,11 @@ class MemberTypeInfo():
         Default value
         Ordering in display/enumeration
     """
-    def __init__(self,name=None,type=None,nullable=True,defval=None,order=None):
+    def __init__(self,name=None,type=None,nullable=True,default=None,order=None):
         self.name=name        
         self.type=type
         self.nullable=nullable
-        self.defval=defval
+        self.default = default
         self.order = order
         
     def validateSettings(self):
@@ -34,8 +35,8 @@ class MemberTypeInfo():
 
         if self.type is None:
             raise TypeException("MemberTypeInfo for %s: type is not specified" % self.name)
-        if not self.nullable and self.defval is None:
-            raise TypeException("MemberTypeInfo for %s: member is not nullable but defval is set to None" % self.name)
+        if not self.nullable and self.default is None:
+            raise TypeException("MemberTypeInfo for %s: member is not nullable but default is set to None" % self.name)
 
     def validateValue(self,val):
         if val is None and not self.nullable:
@@ -46,7 +47,7 @@ class MemberTypeInfo():
 
     def __cmp__(self, other):
         if not isinstance(other,MemberTypeInfo):
-            raise Exception("Cain't compare a MemberTypeInfo to %s",other)
+            raise Exception("Can't compare a MemberTypeInfo to %s",other)
 
         if self.order is not None:
             if other.order is None:
@@ -91,7 +92,7 @@ class TypeInfo(object):
             mti = normalizeMti(asList[i])
 
             if not isinstance(mti, MemberTypeInfo):
-                raise TypeException("TypeInfo - failed to initialize MemberTypeInfo with %s",asList[i])
+                raise TypeException("TypeInfo - failed to initialize MemberTypeInfo with %s" % asList[i])
 
             mti.validateSettings()
             if mti.order is None: mti.order=i
@@ -101,7 +102,7 @@ class TypeInfo(object):
 
             value = normalizeMti(value)
             if not isinstance(value,MemberTypeInfo):
-                raise TypeException("TypeInfo - failed to initialize MemberTypeInfo for %s",name)
+                raise TypeException("TypeInfo - failed to initialize MemberTypeInfo for %s" % name)
             value.name=name
             value.validateSettings()
             self._memberInfo[value.name]=value
@@ -111,7 +112,7 @@ class TypeInfo(object):
 
 
 class TypedObject(object):
-    """ mixing class containing all kind of type info utils """
+    """ mixin class containing all kind of type info utils """
 
     @staticmethod
     def _getTypeInfoDict(obj):
@@ -138,36 +139,32 @@ class TypedObject(object):
         ret.sort()
         return ret
 
-
-
-
-
-
-    def enumTypes(self):
+    def listTypes(self):
         """ Enumerates the attributes and types of an object. return is a enum of tuples (attname,atttype) """
         return [(mti.name,mti.type) for mti in TypedObject._getTypeInfoList(self)]
 
     def initToNone(self):
-        """ set all typed attributes to None. Note- this will throw and exception of not members are nullable """
-        for att in TypedObject._getTypeInfoDict(self).keys():
+        """ Set all typed attributes to None. Note: this will throw an exception if any members are not nullable """
+        for att,mti in TypedObject._getTypeInfoDict(self).items():
+            if not mti.nullable:
+                raise TypeException('Member %s is not nullable' % att)
             setattr(self,att,None)
 
     def initToDefaults(self):
-        """ set all typed attributes to their default values. Note all types must have a default constructor """
+        """ set all typed attributes to their default values. Note all types must have a default """
         for mti in TypedObject._getTypeInfoDict(self).values():
-            setattr(self,mti.name,mti.defval)
+            setattr(self,mti.name,deepcopy(mti.default))
 
-    def validateTypes(self,allowNone=True,throw=True):
+    def validateMemberTypes(self,allowNone=True,throw=True):
         """ scans all typed attributes of obj to see if the derive from or are the types mentioned. """
         for mti in TypedObject._getTypeInfoDict(self).values():
-            val = getattr(self,mti.name)
-            if not isinstance(val,mti.type):
+            val = getattr(self, mti.name)
+            if val is None:
+                if not mti.nullable:
+                    raise TypeException('Member %s is not nullable but is None' % mti.name)
+            elif not isinstance(val,mti.type):
                 if throw:
-                    raise TypeException("Member %s is not of type %s (found %s)",mti.name,mti.type,val)
-
+                    raise TypeException("Member %s is not of type %s (found %s)" % (mti.name,mti.type,val))
                 else:
                     return False
-
-
-
-
+        return True

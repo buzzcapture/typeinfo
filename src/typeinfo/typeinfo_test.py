@@ -1,4 +1,4 @@
-from TypeInfo import TypedObject, TypeInfo, MemberTypeInfo
+from TypeInfo import TypedObject, TypeInfo, MemberTypeInfo, TypeException
 
 __author__ = 'boaz'
 
@@ -6,23 +6,23 @@ import unittest
 
 
 class MyTestCase(unittest.TestCase):
-    def test_enum_simple(self):
+    def test_list_simple(self):
 
         class A(TypedObject):
             __typeinfo__= TypeInfo(
                 i = int,
-                j = MemberTypeInfo(type=str,defval="a"),
+                j = MemberTypeInfo(type=str,default="a"),
             )
 
-        en = A().enumTypes()
+        en = A().listTypes()
         self.assertEqual(en, [("i" , int),("j", str)])
 
-    def test_enum_set_to_default(self):
+    def test_set_to_default(self):
 
         class A(TypedObject):
             __typeinfo__= TypeInfo(
                 i = int,
-                j = MemberTypeInfo(type=str,defval="a"),
+                j = MemberTypeInfo(type=str,default="a"),
             )
 
         en = A()
@@ -30,12 +30,12 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(en.i, None)
         self.assertEqual(en.j, "a")
 
-    def test_enum_set_to_none(self):
+    def test_set_to_none(self):
 
         class A(TypedObject):
             __typeinfo__= TypeInfo(
                 i = int,
-                j = MemberTypeInfo(type=str,defval="a"),
+                j = MemberTypeInfo(type=str,default="a"),
             )
 
         en = A()
@@ -45,7 +45,7 @@ class MyTestCase(unittest.TestCase):
 
 
 
-    def test_enum_multiple_base_classes(self):
+    def test_list_multiple_base_classes(self):
 
         class A(TypedObject):
             __typeinfo__= TypeInfo(
@@ -54,8 +54,8 @@ class MyTestCase(unittest.TestCase):
 
         class B(TypedObject):
             __typeinfo__= TypeInfo(
-                j = MemberTypeInfo(type=str,defval="a"),
-                z = MemberTypeInfo(type=str,defval="a"),
+                j = MemberTypeInfo(type=str,default="a"),
+                z = MemberTypeInfo(type=str,default="a"),
             )
 
 
@@ -65,40 +65,62 @@ class MyTestCase(unittest.TestCase):
                 z = int
             )
 
-        en = C().enumTypes()
+        en = C().listTypes()
         self.assertEqual(en, [("i" , int),("j", str),("k",int),("z",int)])
 
 
 
-    def test_enum_order(self):
+    def test_list_order(self):
 
         class A(TypedObject):
             __typeinfo__= TypeInfo(
                 i = int,
-                j = MemberTypeInfo(type=str,defval="a"),
-                y = MemberTypeInfo(type=int,defval=1,order=0),
-                a = MemberTypeInfo(type=int,defval=1,order=0),
-                c = MemberTypeInfo(type=int,defval=1,order=1),
+                j = MemberTypeInfo(type=str,default="a"),
+                y = MemberTypeInfo(type=int,default=1,order=0),
+                a = MemberTypeInfo(type=int,default=1,order=0),
+                c = MemberTypeInfo(type=int,default=1,order=1),
             )
 
-        en = A().enumTypes()
+        en = A().listTypes()
         self.assertEqual([n for n,t in en], ["a","y","c","i","j"])
 
 
 
-    def test_enum_list_init(self):
+    def test_list_list_init(self):
 
         class A(TypedObject):
             __typeinfo__= TypeInfo([
                 ("i" , int),
-                { "name":"y" , "type" : str, "defval" : "a" },
-                MemberTypeInfo(name="j",type=int,defval=1),
+                { "name":"y" , "type" : str, "default" : "a" },
+                MemberTypeInfo(name="j",type=int,default=1),
             ])
 
-        en = A().enumTypes()
+        en = A().listTypes()
         self.assertEqual([n for n,t in en], ["i","y","j"])
 
+    def test_exceptions(self):
+        class A(TypedObject):
+            __typeinfo__ = TypeInfo(
+                i = MemberTypeInfo(type=str, nullable=False, default='nothing!'),
+            )
 
+        a = A()
+        self.assertRaises(TypeException, a.initToNone)
+
+        self.assertRaises(TypeException, TypeInfo, i=MemberTypeInfo(type=str, nullable=False, default=None))
+
+    def test_defaults_not_shared(self):
+        class A(TypedObject):
+            __typeinfo__ = TypeInfo(
+                i = MemberTypeInfo(type=list, default=[])
+            )
+        a = A()
+        b = A()
+
+        a.initToDefaults()
+        a.i.append(1)
+        b.initToDefaults()
+        self.assertEqual(b.i, [])
 
 if __name__ == '__main__':
     unittest.main()
