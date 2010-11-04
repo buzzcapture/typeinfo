@@ -147,7 +147,7 @@ class TypedObject(object):
 
     @class_or_instance
     def listTypes(self):
-        """ Enumerates the attributes and types of an object. return is a enum of tuples (attname,atttype) """
+        """ Enumerates the attributes and types of an object. return is a list of tuples (attname,atttype) """
         return [(mti.name,mti.type) for mti in TypedObject._getTypeInfoList(self)]
 
     def initToNone(self):
