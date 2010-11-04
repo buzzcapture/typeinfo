@@ -11,6 +11,7 @@
 """
 from inspect import isclass
 from copy import deepcopy
+from type import MethodType
 
 class TypeException(Exception):
     pass
@@ -108,7 +109,12 @@ class TypeInfo(object):
             self._memberInfo[value.name]=value
 
 
+class class_or_instance(object):
+    def __init__(self, func):
+        self._func = func
 
+    def __get__(self, obj, cls):
+        return MethodType(self._func, cls if obj is None else obj, cls)
 
 
 class TypedObject(object):
@@ -139,6 +145,7 @@ class TypedObject(object):
         ret.sort()
         return ret
 
+    @class_or_instance
     def listTypes(self):
         """ Enumerates the attributes and types of an object. return is a enum of tuples (attname,atttype) """
         return [(mti.name,mti.type) for mti in TypedObject._getTypeInfoList(self)]
