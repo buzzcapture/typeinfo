@@ -1,4 +1,4 @@
-from TypeInfo import TypedObject, TypeInfo, MemberTypeInfo, TypeException
+from TypeInfo import TypedObject, TypeInfo, MemberTypeInfo, TypeException, TypedObjectBase
 
 __author__ = 'boaz'
 
@@ -6,9 +6,48 @@ import unittest
 
 
 class MyTestCase(unittest.TestCase):
-    def test_list_simple(self):
+
+    def test_auto_type_info_basic(self):
 
         class A(TypedObject):
+                i = int
+                j = MemberTypeInfo(type=str,default="a")
+
+        en = A().listTypes()
+        self.assertEqual(en, [("i" , int),("j", str)])
+
+    def test_auto_ti_inheritance(self):
+        class A(TypedObject):
+            i = int
+
+        class B(A):
+            j = MemberTypeInfo(type=str,default="a")
+            z = MemberTypeInfo(type=str,default="a")
+
+        en = B().listTypes()
+        self.assertEqual(en, [("i" , int),("j", str),("z",int)])
+
+    def test_auto_ti_inheritance(self):
+        class A(TypedObject):
+            i = int
+
+        class B(TypedObject):
+            j = MemberTypeInfo(type=str,default="a")
+            z = MemberTypeInfo(type=str,default="a")
+
+
+        class C(A,B,TypedObject):
+            k =int
+            z = int
+
+
+        en = C().listTypes()
+        self.assertEqual(en, [("i" , int),("j", str),("k",int),("z",int)])
+
+
+    def test_list_simple(self):
+
+        class A(TypedObjectBase):
             __typeinfo__= TypeInfo(
                 i = int,
                 j = MemberTypeInfo(type=str,default="a"),
@@ -19,7 +58,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_set_to_default(self):
 
-        class A(TypedObject):
+        class A(TypedObjectBase):
             __typeinfo__= TypeInfo(
                 i = int,
                 j = MemberTypeInfo(type=str,default="a"),
@@ -47,12 +86,12 @@ class MyTestCase(unittest.TestCase):
 
     def test_list_multiple_base_classes(self):
 
-        class A(TypedObject):
+        class A(TypedObjectBase):
             __typeinfo__= TypeInfo(
                 i = int,
             )
 
-        class B(TypedObject):
+        class B(TypedObjectBase):
             __typeinfo__= TypeInfo(
                 j = MemberTypeInfo(type=str,default="a"),
                 z = MemberTypeInfo(type=str,default="a"),
@@ -72,7 +111,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_list_order(self):
 
-        class A(TypedObject):
+        class A(TypedObjectBase):
             __typeinfo__= TypeInfo(
                 i = int,
                 j = MemberTypeInfo(type=str,default="a"),
@@ -88,7 +127,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_list_list_init(self):
 
-        class A(TypedObject):
+        class A(TypedObjectBase):
             __typeinfo__= TypeInfo([
                 ("i" , int),
                 { "name":"y" , "type" : str, "default" : "a" },
@@ -99,7 +138,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual([n for n,t in en], ["i","y","j"])
 
     def test_exceptions(self):
-        class A(TypedObject):
+        class A(TypedObjectBase):
             __typeinfo__ = TypeInfo(
                 i = MemberTypeInfo(type=str, nullable=False, default='nothing!'),
             )
@@ -110,7 +149,7 @@ class MyTestCase(unittest.TestCase):
         self.assertRaises(TypeException, TypeInfo, i=MemberTypeInfo(type=str, nullable=False, default=None))
 
     def test_defaults_not_shared(self):
-        class A(TypedObject):
+        class A(TypedObjectBase):
             __typeinfo__ = TypeInfo(
                 i = MemberTypeInfo(type=list, default=[])
             )
