@@ -11,7 +11,7 @@
 """
 from inspect import isclass
 from copy import deepcopy
-from type import MethodType
+from types import MethodType
 
 class TypeException(Exception):
     pass
@@ -117,7 +117,7 @@ class class_or_instance(object):
         return MethodType(self._func, cls if obj is None else obj, cls)
 
 
-class TypedObject(object):
+class TypedObjectBase(object):
     """ mixin class containing all kind of type info utils """
 
     @staticmethod
@@ -175,3 +175,43 @@ class TypedObject(object):
                 else:
                     return False
         return True
+
+
+
+class TypedObjectMetaClass(type):
+
+     def __new__(cls, name, bases, attrs):
+        meta_info = dict()
+
+        def istypeinfo(att,value):
+            return  (not (att.startswith("__") and att.endswith("__"))) and (isclass(value) or isinstance(value,MemberTypeInfo))
+
+        for (k,v) in attrs.iteritems():
+            if istypeinfo(k,v):
+                meta_info[k]=v
+
+        if len(meta_info):
+            for k in meta_info.keys():
+                del attrs[k]
+            mi = TypeInfo(**meta_info)
+            attrs["__typeinfo__"] = mi
+
+        return type.__new__(cls, name, bases, attrs)
+
+     
+
+class TypedObject(TypedObjectBase):
+    """ Inherit from this class to get your type info auto generated based on member types in you class object.
+        Ex:
+            Class A(TypedObject):
+                i : int,
+                j : string
+
+            this class member info will be intialized to have two members i & j of type string and int
+    """
+
+    __metaclass__ = TypedObjectMetaClass
+
+
+
+                 
