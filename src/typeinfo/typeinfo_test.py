@@ -1,4 +1,5 @@
 from TypeInfo import TypedObject, TypeInfo, MemberTypeInfo, TypeException, TypedObjectBase
+import Serialization
 
 __author__ = 'boaz'
 
@@ -160,6 +161,12 @@ class MyTestCase(unittest.TestCase):
         a.i.append(1)
         b.initToDefaults()
         self.assertEqual(b.i, [])
+
+    def test_register_for_serialization(self):
+        class A(TypedObject):
+            i = int
+            j = unicode
+        Serialization.Register(A)
 
 if __name__ == '__main__':
     unittest.main()
