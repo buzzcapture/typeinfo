@@ -213,5 +213,9 @@ class TypedObject(TypedObjectBase):
     __metaclass__ = TypedObjectMetaClass
 
 
+    def __init__(self):
+        self.initToDefaults()
+
+
 
                  
