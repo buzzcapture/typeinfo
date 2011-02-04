@@ -9,9 +9,14 @@
            self.att1=1
            self.att2="A"
 """
-from inspect import isclass
+import functools
+from inspect import isclass, ismethod, isfunction
 from copy import deepcopy
 from types import MethodType
+
+
+DEBUG_MODE = __debug__
+
 
 class TypeException(Exception):
     pass
@@ -36,6 +41,8 @@ class MemberTypeInfo():
 
         if self.type is None:
             raise TypeException("MemberTypeInfo for %s: type is not specified" % self.name)
+        if not isclass(self.type):
+            raise TypeException("MemberTypeInfo for %s: type is not a class" % self.name)
         if not self.nullable and self.default is None:
             raise TypeException("MemberTypeInfo for %s: member is not nullable but default is set to None" % self.name)
 
@@ -162,16 +169,16 @@ class TypedObjectBase(object):
         for mti in TypedObject._getTypeInfoDict(self).values():
             setattr(self,mti.name,deepcopy(mti.default))
 
-    def validateMemberTypes(self,allowNone=True,throw=True):
+    def validateMemberTypes(self,throw=True):
         """ scans all typed attributes of obj to see if the derive from or are the types mentioned. """
         for mti in TypedObject._getTypeInfoDict(self).values():
             val = getattr(self, mti.name)
             if val is None:
                 if not mti.nullable:
-                    raise TypeException('Member %s is not nullable but is None' % mti.name)
+                    raise TypeException('Member %s of %s is not nullable but is None' % mti.name,self)
             elif not isinstance(val,mti.type):
                 if throw:
-                    raise TypeException("Member %s is not of type %s (found %s)" % (mti.name,mti.type,val))
+                    raise TypeException("Member %s of %s is not of type %s (found %s)" % (mti.name,self,mti.type,val))
                 else:
                     return False
         return True
@@ -181,6 +188,41 @@ class TypedObjectBase(object):
             kwargs.update(initDict)
         for (k,v) in kwargs.items():
             setattr(self, k, v)
+
+def _auto_input_checker(func):
+
+    def test(o):
+        if isinstance(o,TypedObjectBase):
+            o.validateMemberTypes()
+
+    @functools.wraps(func)
+    def checker(*args,**kwargs):
+        """ also checks self as it is the first param """
+        for a in args: test(a)
+        for a in kwargs.values(): test(a)
+
+        r = func(*args,**kwargs)
+        return r
+
+    return checker
+
+def _auto_output_checker(func):
+
+    def test(o):
+        if isinstance(o,TypedObjectBase):
+            o.validateMemberTypes()
+
+    @functools.wraps(func)
+    def checker(*args,**kwargs):
+        """ also checks self as it is the first param """
+
+        r = func(*args,**kwargs)
+        if args: test(args[0]) # test self if there
+        test(r)
+
+        return r
+
+    return checker
 
 
 class TypedObjectMetaClass(type):
@@ -194,6 +236,12 @@ class TypedObjectMetaClass(type):
         for (k,v) in attrs.iteritems():
             if istypeinfo(k,v):
                 meta_info[k]=v
+            if DEBUG_MODE and isfunction(v):
+                if k == "__init__":
+                    attrs[k]=_auto_output_checker(v)
+                else:
+                    attrs[k]=_auto_output_checker(_auto_input_checker(v))
+
 
         if len(meta_info):
             for k in meta_info.keys():

@@ -1,4 +1,6 @@
 from TypeInfo import TypedObject, TypeInfo, MemberTypeInfo, TypeException, TypedObjectBase
+import TypeInfo as TypeInfoModule
+
 import Serialization
 
 __author__ = 'boaz'
@@ -16,6 +18,63 @@ class MyTestCase(unittest.TestCase):
 
         en = A().listTypes()
         self.assertEqual(en, [("i" , int),("j", str)])
+
+
+    def test_debug_mode(self):
+
+        TypeInfoModule.DEBUG_MODE = True
+        class A(TypedObject):
+            i = int
+
+            def f(self):
+                return self.i
+
+        a =A()
+        a.f() # check none
+        a.i=2
+        a.f() # check return
+
+        a.i= "B"
+        try:
+            a.f()
+            raise AssertionError(" Debug mode failed to catch erroneous member type")
+        except TypeException as e:
+            pass
+
+        class B(TypedObject):
+            a = A
+
+            def s(self,na):
+                self.a = na
+
+            def f(self):
+                self.a.i="A"
+                return self.a
+
+        b = B()
+
+        b.s(A()) # check for succesful test
+
+        try:
+            a = A()
+            a.i = ""
+            b.s(a)
+            raise AssertionError("Debug mode failed to catch erroneous input")
+        except  TypeException:
+            b.s(A())
+
+
+
+        try:
+            b.f()
+            raise AssertionError("Debug mode failed to catch erroneous return type")
+        except  TypeException:
+            pass
+
+        TypeInfoModule.DEBUG_MODE = False
+
+
+
 
     def test_auto_ti_inheritance(self):
         class A(TypedObject):
