@@ -176,6 +176,11 @@ class TypedObjectBase(object):
                     return False
         return True
 
+    def initFromDict(self, initDict=None, **kwargs):
+        if initDict is not None:
+            kwargs.update(initDict)
+        for (k,v) in kwargs.items():
+            setattr(self, k, v)
 
 
 class TypedObjectMetaClass(type):
