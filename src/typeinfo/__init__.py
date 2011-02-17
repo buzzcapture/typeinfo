@@ -15,7 +15,13 @@ from copy import deepcopy
 from types import MethodType
 
 
-DEBUG_MODE = __debug__
+DEBUG_MODE = False
+
+try:
+    import ServerEnv
+    DEBUG_MODE= ServerEnv.currentCFG.DEBUG
+except ImportError:
+    pass
 
 
 class TypeException(Exception):
