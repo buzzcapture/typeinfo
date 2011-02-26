@@ -10,6 +10,26 @@ import unittest
 
 class MyTestCase(unittest.TestCase):
 
+
+    def test_Integers(self):
+
+        class A(TypedObject):
+                i = TypeInfoModule.IntegerType()
+
+        en = A().listTypes()
+        self.assertEqual(en, [("i" , (int,long))])
+
+        en = A()
+        en.i = 1
+        self.assertTrue(en.validateMemberTypes(throw=False))
+        en.i = 2L
+        self.assertTrue(en.validateMemberTypes(throw=False))
+
+        en.i="bla bla"
+        self.assertFalse(en.validateMemberTypes(throw=False))
+
+
+
     def test_auto_type_info_basic(self):
 
         class A(TypedObject):
@@ -18,6 +38,8 @@ class MyTestCase(unittest.TestCase):
 
         en = A().listTypes()
         self.assertEqual(en, [("i" , int),("j", str)])
+
+
 
 
     def test_debug_mode(self):
