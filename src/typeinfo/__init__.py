@@ -27,16 +27,16 @@ except ImportError:
 class TypeException(Exception):
     pass
 
-class MemberTypeInfo():
+class MemberTypeInfo(object):
     """ Contains the type info of members. Things like:
-        Type
+        Type (type can be a tuple of possible types)
         Nullable
         Default value
         Ordering in display/enumeration
     """
     def __init__(self,name=None,type=None,nullable=True,default=None,order=None):
         self.name=name        
-        self.type=type
+        self.type= type
         self.nullable=nullable
         self.default = default
         self.order = order
@@ -47,16 +47,32 @@ class MemberTypeInfo():
 
         if self.type is None:
             raise TypeException("MemberTypeInfo for %s: type is not specified" % self.name)
-        if not isclass(self.type):
-            raise TypeException("MemberTypeInfo for %s: type is not a class" % self.name)
+        if not (isclass(self.type)):
+            try:
+                for t in self.type:
+                    if not isclass(t):
+                        raise Exception("Sub memberinfo is not a type")
+            except:
+                raise TypeException("MemberTypeInfo for %s: type is not a class or a list of classes" % self.name)
         if not self.nullable and self.default is None:
             raise TypeException("MemberTypeInfo for %s: member is not nullable but default is set to None" % self.name)
 
-    def validateValue(self,val):
+    def validateValue(self,val,throw=True):
         if val is None and not self.nullable:
-            raise TypeException("Member '%s' may not be null" % self.name)
-        if val is not None and not isinstance(val,self.type):
-            raise TypeException("Memeber '%s' is not derived from '%s'." % (self.name,self.type))
+            if throw:
+                raise TypeException("Member '%s' may not be null" % self.name)
+            else:
+                return False
+
+        if val is not None:
+            tps = (self.type,) if isclass(self.type) else self.type
+            for t in tps:
+                if isinstance(val,t):
+                    return True
+            if throw:
+                raise TypeException("Memeber '%s' is not derived from '%s'." % (self.name,self.type))
+            else:
+                return False
 
 
     def __cmp__(self, other):
@@ -182,9 +198,9 @@ class TypedObjectBase(object):
             if val is None:
                 if not mti.nullable:
                     raise TypeException('Member %s of %s is not nullable but is None' % mti.name,self)
-            elif not isinstance(val,mti.type):
+            elif not mti.validateValue(val,throw=False):
                 if throw:
-                    raise TypeException("Member %s of %s is not of type %s (found %s)" % (mti.name,self,mti.type,val))
+                    raise TypeException("Member %s of %s is not of type %s (found %s of type %s)" % (mti.name,self,mti.type,val,type(val)))
                 else:
                     return False
         return True
@@ -277,4 +293,8 @@ class TypedObject(TypedObjectBase):
 
 
 
-                 
+class IntegerType(MemberTypeInfo):
+
+    def __init__(self,**kwargs):
+        kwargs["type"]=(int,long)
+        super(IntegerType,self).__init__(**kwargs)
