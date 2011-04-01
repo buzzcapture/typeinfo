@@ -55,7 +55,10 @@ class MemberTypeInfo(object):
             except:
                 raise TypeException("MemberTypeInfo for %s: type is not a class or a list of classes" % self.name)
         if not self.nullable and self.default is None:
-            raise TypeException("MemberTypeInfo for %s: member is not nullable but default is set to None" % self.name)
+            try:
+                type()
+            except:
+                raise TypeException("MemberTypeInfo for %s: member is not nullable, default is set to None and type has no default constructor." % self.name)
 
     def validateValue(self,val,throw=True):
         if val is None and not self.nullable:
@@ -189,7 +192,11 @@ class TypedObjectBase(object):
     def initToDefaults(self):
         """ set all typed attributes to their default values. Note all types must have a default """
         for mti in TypedObject._getTypeInfoDict(self).values():
-            setattr(self,mti.name,deepcopy(mti.default))
+            if not mti.nullable and mti.default is None:
+                v = mti.type()
+            else:
+                v = deepcopy(mti.default)
+            setattr(self,mti.name,v)
 
     def validateMemberTypes(self,throw=True):
         """ scans all typed attributes of obj to see if the derive from or are the types mentioned. """
