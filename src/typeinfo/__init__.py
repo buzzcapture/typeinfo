@@ -56,7 +56,7 @@ class MemberTypeInfo(object):
                 raise TypeException("MemberTypeInfo for %s: type is not a class or a list of classes" % self.name)
         if not self.nullable and self.default is None:
             try:
-                type()
+                self.type()
             except:
                 raise TypeException("MemberTypeInfo for %s: member is not nullable, default is set to None and type has no default constructor." % self.name)
 
