@@ -34,12 +34,13 @@ class MemberTypeInfo(object):
         Default value
         Ordering in display/enumeration
     """
-    def __init__(self,name=None,type=None,nullable=True,default=None,order=None):
+    def __init__(self,name=None,type=None,nullable=True,default=None,order=None,none_on_init=False):
         self.name=name        
         self.type= type
         self.nullable=nullable
         self.default = default
         self.order = order
+        self.none_on_init = none_on_init
         
     def validateSettings(self):
         if self.name is None:
@@ -54,11 +55,11 @@ class MemberTypeInfo(object):
                         raise Exception("Sub memberinfo is not a type")
             except:
                 raise TypeException("MemberTypeInfo for %s: type is not a class or a list of classes" % self.name)
-        if not self.nullable and self.default is None:
+        if not self.nullable and self.default is None and not self.none_on_init:
             try:
                 self.type()
             except:
-                raise TypeException("MemberTypeInfo for %s: member is not nullable, default is set to None and type has no default constructor." % self.name)
+                raise TypeException("MemberTypeInfo for %s: member is not nullable, default is set to None and type has no default constructor." % (self.name,))
 
     def validateValue(self,val,throw=True):
         if val is None and not self.nullable:
@@ -182,14 +183,14 @@ class TypedObjectBase(object):
         """ Enumerates the attributes and types of an object. return is a list of tuples (attname,atttype) """
         return [(mti.name,mti.type) for mti in TypedObject._getTypeInfoList(self)]
 
-    def initToNone(self):
+    def setToNones(self):
         """ Set all typed attributes to None. Note: this will throw an exception if any members are not nullable """
         for att,mti in TypedObject._getTypeInfoDict(self).items():
             if not mti.nullable:
                 raise TypeException('Member %s is not nullable' % att)
             setattr(self,att,None)
 
-    def initToDefaults(self):
+    def setToDefaults(self):
         """ set all typed attributes to their default values. Note all types must have a default """
         for mti in TypedObject._getTypeInfoDict(self).values():
             if not mti.nullable and mti.default is None:
@@ -198,13 +199,26 @@ class TypedObjectBase(object):
                 v = deepcopy(mti.default)
             setattr(self,mti.name,v)
 
+
+    def initMembers(self):
+        """ initialize members on init (by defaults, or to none) """
+        for mti in TypedObject._getTypeInfoDict(self).values():
+            if mti.none_on_init:
+                v= None
+            elif not mti.nullable and mti.default is None:
+                v = mti.type()
+            else:
+                v = deepcopy(mti.default)
+            setattr(self,mti.name,v)
+
+
     def validateMemberTypes(self,throw=True):
         """ scans all typed attributes of obj to see if the derive from or are the types mentioned. """
         for mti in TypedObject._getTypeInfoDict(self).values():
             val = getattr(self, mti.name)
             if val is None:
                 if not mti.nullable:
-                    raise TypeException('Member %s of %s is not nullable but is None' % mti.name,self)
+                    raise TypeException('Member %s of %s is not nullable but is None' % (mti.name,self,))
             elif not mti.validateValue(val,throw=False):
                 if throw:
                     raise TypeException("Member %s of %s is not of type %s (found %s of type %s)" % (mti.name,self,mti.type,val,type(val)))
@@ -296,7 +310,7 @@ class TypedObject(TypedObjectBase):
 
 
     def __init__(self):
-        self.initToDefaults()
+        self.initMembers()
 
 
 

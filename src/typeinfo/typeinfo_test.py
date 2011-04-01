@@ -147,7 +147,7 @@ class MyTestCase(unittest.TestCase):
             )
 
         en = A()
-        en.initToDefaults()
+        en.setToDefaults()
         self.assertEqual(en.i, None)
         self.assertEqual(en.j, "a")
 
@@ -160,7 +160,7 @@ class MyTestCase(unittest.TestCase):
             )
 
         en = A()
-        en.initToNone()
+        en.setToNones()
         self.assertEqual(en.i, None)
         self.assertEqual(en.j, None)
 
@@ -219,6 +219,21 @@ class MyTestCase(unittest.TestCase):
         en = A().listTypes()
         self.assertEqual([n for n,t in en], ["i","y","j"])
 
+    def test_none_on_init(self):
+        class A(TypedObjectBase):
+                __typeinfo__ = TypeInfo(
+                    i = MemberTypeInfo(type=basestring, nullable=False, none_on_init=True ),
+                )
+
+        a = A()
+        a.initMembers()
+
+        self.assertEquals(a.i,None)
+
+        self.assertRaises(TypeException,a.validateMemberTypes,a)
+
+
+
     def test_exceptions(self):
         class A(TypedObjectBase):
             __typeinfo__ = TypeInfo(
@@ -226,9 +241,9 @@ class MyTestCase(unittest.TestCase):
             )
 
         a = A()
-        self.assertRaises(TypeException, a.initToNone)
+        self.assertRaises(TypeException, a.setToNones)
 
-        self.assertRaises(TypeException, TypeInfo, i=MemberTypeInfo(type=str, nullable=False, default=None))
+        self.assertRaises(TypeException, TypeInfo, i=MemberTypeInfo(type=basestring, nullable=False, default=None))
 
     def test_defaults_not_shared(self):
         class A(TypedObjectBase):
@@ -238,9 +253,9 @@ class MyTestCase(unittest.TestCase):
         a = A()
         b = A()
 
-        a.initToDefaults()
+        a.setToDefaults()
         a.i.append(1)
-        b.initToDefaults()
+        b.setToDefaults()
         self.assertEqual(b.i, [])
 
     def test_register_for_serialization(self):
