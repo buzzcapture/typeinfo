@@ -1,0 +1,22 @@
+syntax: glob
+bin
+lib
+develop
+develop-eggs
+downloads
+eggs
+.installed.cfg
+.mr.developer.cfg
+parts
+*.pyc
+src/*.egg-info
+*.swp
+coverage
+.python
+.Python
+include
+testing/*.egg-info
+.project
+.pydevproject
+.pydevproject.bak
+.idea
