@@ -24,9 +24,6 @@ except ImportError:
     pass
 
 
-class TypeException(Exception):
-    pass
-
 class MemberTypeInfo(object):
     """ Contains the type info of members. Things like:
         Type (type can be a tuple of possible types)
@@ -44,27 +41,27 @@ class MemberTypeInfo(object):
         
     def validateSettings(self):
         if self.name is None:
-            raise TypeException("MemberTypeInfo: name is not specified")
+            raise TypeError("MemberTypeInfo: name is not specified")
 
         if self.type is None:
-            raise TypeException("MemberTypeInfo for %s: type is not specified" % self.name)
+            raise TypeError("MemberTypeInfo for %s: type is not specified" % self.name)
         if not (isclass(self.type)):
             try:
                 for t in self.type:
                     if not isclass(t):
                         raise Exception("Sub memberinfo is not a type")
             except:
-                raise TypeException("MemberTypeInfo for %s: type is not a class or a list of classes" % self.name)
+                raise TypeError("MemberTypeInfo for %s: type is not a class or a list of classes" % self.name)
         if not self.nullable and self.default is None and not self.none_on_init:
             try:
                 self.type()
             except:
-                raise TypeException("MemberTypeInfo for %s: member is not nullable, default is set to None and type has no default constructor." % (self.name,))
+                raise TypeError("MemberTypeInfo for %s: member is not nullable, default is set to None and type has no default constructor." % (self.name,))
 
     def validateValue(self,val,throw=True):
         if val is None and not self.nullable:
             if throw:
-                raise TypeException("Member '%s' may not be null" % self.name)
+                raise TypeError("Member '%s' may not be null" % self.name)
             else:
                 return False
 
@@ -74,7 +71,7 @@ class MemberTypeInfo(object):
                 if isinstance(val,t):
                     return True
             if throw:
-                raise TypeException("Memeber '%s' is not derived from '%s'." % (self.name,self.type))
+                raise TypeError("Memeber '%s' is not derived from '%s'." % (self.name,self.type))
             else:
                 return False
 
@@ -126,7 +123,7 @@ class TypeInfo(object):
             mti = normalizeMti(asList[i])
 
             if not isinstance(mti, MemberTypeInfo):
-                raise TypeException("TypeInfo - failed to initialize MemberTypeInfo with %s" % asList[i])
+                raise TypeError("TypeInfo - failed to initialize MemberTypeInfo with %s" % asList[i])
 
             mti.validateSettings()
             if mti.order is None: mti.order=i
@@ -136,7 +133,7 @@ class TypeInfo(object):
 
             value = normalizeMti(value)
             if not isinstance(value,MemberTypeInfo):
-                raise TypeException("TypeInfo - failed to initialize MemberTypeInfo for %s" % name)
+                raise TypeError("TypeInfo - failed to initialize MemberTypeInfo for %s" % name)
             value.name=name
             value.validateSettings()
             self._memberInfo[value.name]=value
@@ -187,7 +184,7 @@ class TypedObjectBase(object):
         """ Set all typed attributes to None. Note: this will throw an exception if any members are not nullable """
         for att,mti in TypedObject._getTypeInfoDict(self).items():
             if not mti.nullable:
-                raise TypeException('Member %s is not nullable' % att)
+                raise TypeError('Member %s is not nullable' % att)
             setattr(self,att,None)
 
     def setToDefaults(self):
@@ -218,10 +215,10 @@ class TypedObjectBase(object):
             val = getattr(self, mti.name)
             if val is None:
                 if not mti.nullable:
-                    raise TypeException('Member %s of %s is not nullable but is None' % (mti.name,self,))
+                    raise TypeError('Member %s of %s is not nullable but is None' % (mti.name,self,))
             elif not mti.validateValue(val,throw=False):
                 if throw:
-                    raise TypeException("Member %s of %s is not of type %s (found %s of type %s)" % (mti.name,self,mti.type,val,type(val)))
+                    raise TypeError("Member %s of %s is not of type %s (found %s of type %s)" % (mti.name,self,mti.type,val,type(val)))
                 else:
                     return False
         return True
