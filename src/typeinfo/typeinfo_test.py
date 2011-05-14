@@ -1,4 +1,5 @@
-from typeinfo import TypedObject, TypeInfo, MemberTypeInfo, TypedObjectBase
+from typeinfo import TypedObject
+from typeinfo.base import TypeInfo, MemberTypeInfo, TypedObjectBase
 import typeinfo as TypeInfoModule
 
 __author__ = 'boaz'
@@ -42,7 +43,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_debug_mode(self):
 
-        TypeInfoModule.DEBUG_MODE = True
+        TypeInfoModule.settings["DEBUG_MODE"] = True
         class A(TypedObject):
             i = int
 
