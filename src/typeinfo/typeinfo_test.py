@@ -1,7 +1,5 @@
-from TypeInfo import TypedObject, TypeInfo, MemberTypeInfo, TypeException, TypedObjectBase
-import TypeInfo as TypeInfoModule
-
-import Serialization
+from typeinfo import TypedObject, TypeInfo, MemberTypeInfo, TypedObjectBase
+import typeinfo as TypeInfoModule
 
 __author__ = 'boaz'
 
@@ -57,11 +55,7 @@ class MyTestCase(unittest.TestCase):
         a.f() # check return
 
         a.i= "B"
-        try:
-            a.f()
-            raise AssertionError(" Debug mode failed to catch erroneous member type")
-        except TypeException as e:
-            pass
+        self.assertRaises(TypeError,a.f)
 
         class B(TypedObject):
             a = A
@@ -82,7 +76,7 @@ class MyTestCase(unittest.TestCase):
             a.i = ""
             b.s(a)
             raise AssertionError("Debug mode failed to catch erroneous input")
-        except  TypeException:
+        except  TypeError:
             b.s(A())
 
 
@@ -90,7 +84,7 @@ class MyTestCase(unittest.TestCase):
         try:
             b.f()
             raise AssertionError("Debug mode failed to catch erroneous return type")
-        except  TypeException:
+        except  TypeError:
             pass
 
         TypeInfoModule.DEBUG_MODE = False
@@ -230,7 +224,7 @@ class MyTestCase(unittest.TestCase):
 
         self.assertEquals(a.i,None)
 
-        self.assertRaises(TypeException,a.validateMemberTypes,a)
+        self.assertRaises(TypeError,a.validateMemberTypes,a)
 
 
 
@@ -241,9 +235,9 @@ class MyTestCase(unittest.TestCase):
             )
 
         a = A()
-        self.assertRaises(TypeException, a.setToNones)
+        self.assertRaises(TypeError, a.setToNones)
 
-        self.assertRaises(TypeException, TypeInfo, i=MemberTypeInfo(type=basestring, nullable=False, default=None))
+        self.assertRaises(TypeError, TypeInfo, i=MemberTypeInfo(type=basestring, nullable=False, default=None))
 
     def test_defaults_not_shared(self):
         class A(TypedObjectBase):
@@ -257,12 +251,6 @@ class MyTestCase(unittest.TestCase):
         a.i.append(1)
         b.setToDefaults()
         self.assertEqual(b.i, [])
-
-    def test_register_for_serialization(self):
-        class A(TypedObject):
-            i = int
-            j = unicode
-        Serialization.Register(A)
 
 if __name__ == '__main__':
     unittest.main()
