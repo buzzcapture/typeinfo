@@ -18,9 +18,8 @@ setup(name='typeinfo',
       author_email='b.leskes@gmail.com',
       url='',
       license='apache',
-      packages=['typeinfo'],
-      package_dir = {'': 'src'},
-      include_package_data=True,
+      py_modules=['typeinfo'],
+      package_dir={ "": "src"},
       zip_safe=False,
       install_requires=[
       ])
