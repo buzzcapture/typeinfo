@@ -307,8 +307,13 @@ class TypedObject(TypedObjectBase):
     __metaclass__ = TypedObjectMetaClass
 
 
-    def __init__(self):
+    def __init__(self,**kwargs):
         self.initMembers()
+        for k,v in kwargs.iteritems():
+            if not hasattr(self,k):
+                raise Exception("Cannot initialize attribute %s: attibute not found." % (k,))
+            setattr(self,k,v)
+
 
 
 

@@ -38,6 +38,15 @@ class MyTestCase(unittest.TestCase):
         en = A().listTypes()
         self.assertEqual(en, [("i" , int),("j", str)])
 
+    def test_auto_type_info_auto_initialize(self):
+
+        class A(TypedObject):
+                i = int
+                j = MemberTypeInfo(type=str,default="a")
+
+        en = A(i=2)
+        self.assertEqual(en.i,2)
+        self.assertEqual(en.j,"a")
 
 
 
