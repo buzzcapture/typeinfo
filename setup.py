@@ -1,7 +1,7 @@
 from setuptools import setup
 import sys, os
 
-version = '1.0dev'
+version = '0.1'
 
 long_description = (
     open('README.txt').read()
