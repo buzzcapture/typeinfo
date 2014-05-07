@@ -1,0 +1,3 @@
+v0.1 Initial release
+
+v0.2 Added repr() support to TypedObject mixin (matches __init__()).
