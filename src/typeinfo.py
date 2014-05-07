@@ -314,7 +314,12 @@ class TypedObject(TypedObjectBase):
                 raise Exception("Cannot initialize attribute %s: attibute not found." % (k,))
             setattr(self,k,v)
 
-
+    def __repr__(self):
+        return (self.__class__.__name__
+                + '('
+                + ', '.join(u'{attr}={val}'.format(attr=repr(attr), val=repr(getattr(self, attr, None)))
+                            for (attr, _) in self.listTypes())
+                + ')')
 
 
 class IntegerType(MemberTypeInfo):
